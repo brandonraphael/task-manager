@@ -73,159 +73,67 @@ var Botkit = require('./lib/Botkit.js');
 var os = require('os');
 
 var controller = Botkit.slackbot({
-    debug: true
+    json_file_store: 'path_to_json_database',
+    debug: false
 });
 
 var bot = controller.spawn({
     token: process.env.token
 }).startRTM();
 
+var tasks = [];
 
-controller.hears(['hello', 'hi'], 'direct_message,direct_mention,mention', function(bot, message) {
+controller.hears(['add'], 'direct_message,direct_mention,mention', function(bot, message) {
+    console.log("message", message);
+    // console.log("match array:", message.match);
+    // console.log("input:", message.match.input);
+    tasks.push(message.match.input.substring(4));
 
-    bot.api.reactions.add({
-        timestamp: message.ts,
-        channel: message.channel,
-        name: 'robot_face',
-    }, function(err, res) {
-        if (err) {
-            bot.botkit.log('Failed to add emoji reaction :(', err);
-        }
-    });
+    // controller.storage.users.get(message.user, function(err, user_data) {
+    //   controller.storage.users.save({id: message.user, tasks: true}, function(err) {
+    //     controller.storage.users.get(message.user, function(err, user_data) {
+    //         console.log("user: ", user_data);
+    //     });
+    //   });
+    // });
 
 
-    controller.storage.users.get(message.user, function(err, user) {
-        if (user && user.name) {
-            bot.reply(message, 'Hello ' + user.name + '!!');
-        } else {
-            bot.reply(message, 'Hello.');
-        }
-    });
+    bot.reply(message, "Saved task");
 });
 
-controller.hears(['call me (.*)', 'my name is (.*)'], 'direct_message,direct_mention,mention', function(bot, message) {
-    var name = message.match[1];
-    controller.storage.users.get(message.user, function(err, user) {
-        if (!user) {
-            user = {
-                id: message.user,
-            };
-        }
-        user.name = name;
-        controller.storage.users.save(user, function(err, id) {
-            bot.reply(message, 'Got it. I will call you ' + user.name + ' from now on.');
-        });
-    });
+controller.hears(['view'], 'direct_message,direct_mention,mention', function(bot, message) {
+  if(tasks.length > 0){
+    bot.reply(message, "Your current tasks:");
+    for(var i = 0; i < tasks.length; i++){
+      bot.reply(message, (i + 1) + ". " + tasks[i]);
+    }
+  }else{
+      bot.reply(message, "You have no current tasks.");
+  }
 });
 
-controller.hears(['what is my name', 'who am i'], 'direct_message,direct_mention,mention', function(bot, message) {
-
-    controller.storage.users.get(message.user, function(err, user) {
-        if (user && user.name) {
-            bot.reply(message, 'Your name is ' + user.name);
-        } else {
-            bot.startConversation(message, function(err, convo) {
-                if (!err) {
-                    convo.say('I do not know your name yet!');
-                    convo.ask('What should I call you?', function(response, convo) {
-                        convo.ask('You want me to call you `' + response.text + '`?', [
-                            {
-                                pattern: 'yes',
-                                callback: function(response, convo) {
-                                    // since no further messages are queued after this,
-                                    // the conversation will end naturally with status == 'completed'
-                                    convo.next();
-                                }
-                            },
-                            {
-                                pattern: 'no',
-                                callback: function(response, convo) {
-                                    // stop the conversation. this will cause it to end with status == 'stopped'
-                                    convo.stop();
-                                }
-                            },
-                            {
-                                default: true,
-                                callback: function(response, convo) {
-                                    convo.repeat();
-                                    convo.next();
-                                }
-                            }
-                        ]);
-
-                        convo.next();
-
-                    }, {'key': 'nickname'}); // store the results in a field called nickname
-
-                    convo.on('end', function(convo) {
-                        if (convo.status == 'completed') {
-                            bot.reply(message, 'OK! I will update my dossier...');
-
-                            controller.storage.users.get(message.user, function(err, user) {
-                                if (!user) {
-                                    user = {
-                                        id: message.user,
-                                    };
-                                }
-                                user.name = convo.extractResponse('nickname');
-                                controller.storage.users.save(user, function(err, id) {
-                                    bot.reply(message, 'Got it. I will call you ' + user.name + ' from now on.');
-                                });
-                            });
-
-
-
-                        } else {
-                            // this happens if the conversation ended prematurely for some reason
-                            bot.reply(message, 'OK, nevermind!');
-                        }
-                    });
-                }
-            });
-        }
-    });
+controller.hears(['clear'], 'direct_message,direct_mention,mention', function(bot, message) {
+    tasks = [];
+    bot.reply(message, "Your task list has been cleared.");
 });
 
+controller.hears(['delete'], 'direct_message,direct_mention,mention', function(bot, message) {
+    if(tasks.indexOf(message.match.input.substring(7)) !== -1) {
 
-controller.hears(['shutdown'], 'direct_message,direct_mention,mention', function(bot, message) {
-
-    bot.startConversation(message, function(err, convo) {
-
-        convo.ask('Are you sure you want me to shutdown?', [
-            {
-                pattern: bot.utterances.yes,
-                callback: function(response, convo) {
-                    convo.say('Bye!');
-                    convo.next();
-                    setTimeout(function() {
-                        process.exit();
-                    }, 3000);
-                }
-            },
-        {
-            pattern: bot.utterances.no,
-            default: true,
-            callback: function(response, convo) {
-                convo.say('*Phew!*');
-                convo.next();
-            }
-        }
-        ]);
-    });
+      tasks.splice(tasks.indexOf(message.match.input.substring(7)), 1);
+      bot.reply(message, "Task has been removed.");
+    }
+    else {
+      bot.reply(message, "Task does not exist in task list.");
+    }
 });
 
-
-controller.hears(['uptime', 'identify yourself', 'who are you', 'what is your name'],
-    'direct_message,direct_mention,mention', function(bot, message) {
-
-        var hostname = os.hostname();
-        var uptime = formatUptime(process.uptime());
-
-        bot.reply(message,
-            ':robot_face: I am a bot named <@' + bot.identity.name +
-             '>. I have been running for ' + uptime + ' on ' + hostname + '.');
-
-    });
+controller.hears(['help', 'halp'], 'direct_message,direct_mention,mention', function(bot, message) {
+    bot.reply(message, "Use 'add [task]' to add a task.");
+    bot.reply(message, "Use 'delete [task]' to remove a task.");
+    bot.reply(message, "Use 'clear' to empty the task list.");
+    bot.reply(message, "Use 'view' to see the task list.");
+});
 
 function formatUptime(uptime) {
     var unit = 'second';
