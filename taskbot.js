@@ -99,7 +99,7 @@ controller.hears(['add'], 'direct_message,direct_mention,mention', function(bot,
         user.tasks.push(message.match.input.substring(4));
         controller.storage.users.save(user,function(err, id) {
             bot.reply(message, "Saved task.");
-            console.log("user: ", user);
+            // console.log("user: ", user);
         });
     });
 });
@@ -113,11 +113,12 @@ controller.hears(['view'], 'direct_message,direct_mention,mention', function(bot
         };
     }
     if(user.tasks.length > 0){
-      bot.reply(message, "Your current tasks:");
-      for(var i = 0; i < user.tasks.length; i++){
-        bot.reply(message, (i + 1) + ". " + user.tasks[i]);
-      }
-    }else{
+        var msg = "";
+        for(var i = 0; i < user.tasks.length; i++){
+            msg += "\n" + (i + 1) + ". " + user.tasks[i];
+        }
+        bot.reply(message, "Your current tasks:" + msg);
+    } else{
         bot.reply(message, "You have no current tasks.");
     }
   });
@@ -147,24 +148,31 @@ controller.hears(['delete'], 'direct_message,direct_mention,mention', function(b
             };
         }
 
-        if(user.tasks.indexOf(message.match.input.substring(7)) !== -1) {
+        if(!isNaN(parseInt(message.match.input.substring(7)))){
+          var taskNumber = parseInt(message.match.input.substring(7))
 
-          user.tasks.splice(user.tasks.indexOf(message.match.input.substring(7)), 1);
-          controller.storage.users.save(user,function(err, id) {
-              bot.reply(message, "Task has been removed.");
-          });
+          if(user.tasks.length >= taskNumber && taskNumber > 0) {
+              user.tasks.splice(taskNumber - 1, 1);
+              controller.storage.users.save(user,function(err, id) {
+                  bot.reply(message, "Task has been removed.");
+              });
+          }
+          else {
+              bot.reply(message, "Task does not exist in task list.");
+          }
         }
         else {
-          bot.reply(message, "Task does not exist in task list.");
+            bot.reply(message, "Use 'delete <task number>' to delete a task. To see the list of task numbers, type 'view'.");
         }
     });
 });
 
 controller.hears(['help', 'halp'], 'direct_message,direct_mention,mention', function(bot, message) {
-    bot.reply(message, "Use 'add [task]' to add a task.");
-    bot.reply(message, "Use 'delete [task]' to remove a task.");
-    bot.reply(message, "Use 'clear' to empty the task list.");
-    bot.reply(message, "Use 'view' to see the task list.");
+    bot.reply(message,
+        "Use 'add <task>' to add a task.\n" +
+        "Use 'delete <task number>' to remove a task.\n" +
+        "Use 'view' to see the tasks and task numbers.\n" +
+        "Use 'clear' to empty the task list.");
 });
 
 function formatUptime(uptime) {
