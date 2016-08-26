@@ -84,48 +84,61 @@ var bot = controller.spawn({
 var tasks = [];
 
 controller.hears(['add'], 'direct_message,direct_mention,mention', function(bot, message) {
-    console.log("message", message);
+    // console.log("message", message);
     // console.log("match array:", message.match);
     // console.log("input:", message.match.input);
-    tasks.push(message.match.input.substring(4));
+    // tasks.push(message.match.input.substring(4));
 
-    // controller.storage.users.get(message.user, function(err, user_data) {
-    //   controller.storage.users.save({id: message.user, tasks: true}, function(err) {
-    //     controller.storage.users.get(message.user, function(err, user_data) {
-    //         console.log("user: ", user_data);
-    //     });
-    //   });
-    // });
-
-
-    bot.reply(message, "Saved task");
+    controller.storage.users.get(message.user,function(err, user) {
+        if (!user) {
+            user = {
+                id: message.user,
+                tasks: []
+            };
+        }
+        user.tasks.push(message.match.input.substring(4));
+        controller.storage.users.save(user,function(err, id) {
+            bot.reply(message, "Saved task.");
+            console.log("user: ", user);
+        });
+    });
 });
 
 controller.hears(['view'], 'direct_message,direct_mention,mention', function(bot, message) {
-  if(tasks.length > 0){
-    bot.reply(message, "Your current tasks:");
-    for(var i = 0; i < tasks.length; i++){
-      bot.reply(message, (i + 1) + ". " + tasks[i]);
+  controller.storage.users.get(message.user,function(err, user) {
+    if(user.tasks.length > 0){
+      bot.reply(message, "Your current tasks:");
+      for(var i = 0; i < user.tasks.length; i++){
+        bot.reply(message, (i + 1) + ". " + user.tasks[i]);
+      }
+    }else{
+        bot.reply(message, "You have no current tasks.");
     }
-  }else{
-      bot.reply(message, "You have no current tasks.");
-  }
+  });
 });
 
 controller.hears(['clear'], 'direct_message,direct_mention,mention', function(bot, message) {
-    tasks = [];
-    bot.reply(message, "Your task list has been cleared.");
+    controller.storage.users.get(message.user,function(err, user) {
+        user.tasks = [];
+        controller.storage.users.save(user,function(err, id) {
+            bot.reply(message, "Your task list has been cleared.");
+        });
+    });
 });
 
 controller.hears(['delete'], 'direct_message,direct_mention,mention', function(bot, message) {
-    if(tasks.indexOf(message.match.input.substring(7)) !== -1) {
+    controller.storage.users.get(message.user,function(err, user) {
+        if(user.tasks.indexOf(message.match.input.substring(7)) !== -1) {
 
-      tasks.splice(tasks.indexOf(message.match.input.substring(7)), 1);
-      bot.reply(message, "Task has been removed.");
-    }
-    else {
-      bot.reply(message, "Task does not exist in task list.");
-    }
+          user.tasks.splice(user.tasks.indexOf(message.match.input.substring(7)), 1);
+          controller.storage.users.save(user,function(err, id) {
+              bot.reply(message, "Task has been removed.");
+          });
+        }
+        else {
+          bot.reply(message, "Task does not exist in task list.");
+        }
+    });
 });
 
 controller.hears(['help', 'halp'], 'direct_message,direct_mention,mention', function(bot, message) {
