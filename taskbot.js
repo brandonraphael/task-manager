@@ -106,6 +106,12 @@ controller.hears(['add'], 'direct_message,direct_mention,mention', function(bot,
 
 controller.hears(['view'], 'direct_message,direct_mention,mention', function(bot, message) {
   controller.storage.users.get(message.user,function(err, user) {
+    if (!user) {
+        user = {
+            id: message.user,
+            tasks: []
+        };
+    }
     if(user.tasks.length > 0){
       bot.reply(message, "Your current tasks:");
       for(var i = 0; i < user.tasks.length; i++){
@@ -119,6 +125,12 @@ controller.hears(['view'], 'direct_message,direct_mention,mention', function(bot
 
 controller.hears(['clear'], 'direct_message,direct_mention,mention', function(bot, message) {
     controller.storage.users.get(message.user,function(err, user) {
+        if (!user) {
+            user = {
+                id: message.user,
+                tasks: []
+            };
+        }
         user.tasks = [];
         controller.storage.users.save(user,function(err, id) {
             bot.reply(message, "Your task list has been cleared.");
@@ -128,6 +140,13 @@ controller.hears(['clear'], 'direct_message,direct_mention,mention', function(bo
 
 controller.hears(['delete'], 'direct_message,direct_mention,mention', function(bot, message) {
     controller.storage.users.get(message.user,function(err, user) {
+        if (!user) {
+            user = {
+                id: message.user,
+                tasks: []
+            };
+        }
+
         if(user.tasks.indexOf(message.match.input.substring(7)) !== -1) {
 
           user.tasks.splice(user.tasks.indexOf(message.match.input.substring(7)), 1);
