@@ -96,7 +96,7 @@ controller.hears(['delete'], 'direct_message,direct_mention,mention', function(b
             };
         }
 
-        if(!isNaN(parseInt(message.match.input.substring(7)))){
+        if(!isNaN(parseInt(message.match.input.substring(7).trim()))){
           var taskNumber = parseInt(message.match.input.substring(7))
 
           if(user.tasks.length >= taskNumber && taskNumber > 0) {
