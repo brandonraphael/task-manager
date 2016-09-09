@@ -1,67 +1,3 @@
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-           ______     ______     ______   __  __     __     ______
-          /\  == \   /\  __ \   /\__  _\ /\ \/ /    /\ \   /\__  _\
-          \ \  __<   \ \ \/\ \  \/_/\ \/ \ \  _"-.  \ \ \  \/_/\ \/
-           \ \_____\  \ \_____\    \ \_\  \ \_\ \_\  \ \_\    \ \_\
-            \/_____/   \/_____/     \/_/   \/_/\/_/   \/_/     \/_/
-
-
-This is a sample Slack bot built with Botkit.
-
-This bot demonstrates many of the core features of Botkit:
-
-* Connect to Slack using the real time API
-* Receive messages based on "spoken" patterns
-* Reply to messages
-* Use the conversation system to ask questions
-* Use the built in storage system to store and retrieve information
-  for a user.
-
-# RUN THE BOT:
-
-  Get a Bot token from Slack:
-
-    -> http://my.slack.com/services/new/bot
-
-  Run your bot from the command line:
-
-    token=<MY TOKEN> node slack_bot.js
-
-# USE THE BOT:
-
-  Find your bot inside Slack to send it a direct message.
-
-  Say: "Hello"
-
-  The bot will reply "Hello!"
-
-  Say: "who are you?"
-
-  The bot will tell you its name, where it is running, and for how long.
-
-  Say: "Call me <nickname>"
-
-  Tell the bot your nickname. Now you are friends.
-
-  Say: "who am I?"
-
-  The bot will tell you your nickname, if it knows one for you.
-
-  Say: "shutdown"
-
-  The bot will ask if you are sure, and then shut itself down.
-
-  Make sure to invite your bot into other channels using /invite @<my bot>!
-
-# EXTEND THE BOT:
-
-  Botkit has many features for building cool and useful bots!
-
-  Read all about it here:
-
-    -> http://howdy.ai/botkit
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 
 if (!process.env.token) {
@@ -96,11 +32,23 @@ controller.hears(['add'], 'direct_message,direct_mention,mention', function(bot,
                 tasks: []
             };
         }
-        user.tasks.push(message.match.input.substring(4));
-        controller.storage.users.save(user,function(err, id) {
-            bot.reply(message, "Saved task.");
-            // console.log("user: ", user);
-        });
+        if(message.match.input.indexOf(",") > -1) {
+            tasks = message.match.input.substring(4).split(',');
+            for(var i in tasks){
+              user.tasks.push(tasks[i]);
+            }
+            controller.storage.users.save(user,function(err, id) {
+                bot.reply(message, "Saved task.");
+                // console.log("user: ", user);
+            });
+        }
+        else {
+          user.tasks.push(message.match.input.substring(4));
+          controller.storage.users.save(user,function(err, id) {
+              bot.reply(message, "Saved task.");
+              // console.log("user: ", user);
+          });
+        }
     });
 });
 
@@ -169,7 +117,7 @@ controller.hears(['delete'], 'direct_message,direct_mention,mention', function(b
 
 controller.hears(['help', 'halp'], 'direct_message,direct_mention,mention', function(bot, message) {
     bot.reply(message,
-        "Use 'add <task>' to add a task.\n" +
+        "Use 'add <task>' to add a task, or 'add <task,task,...>' to add multiple tasks.\n" +
         "Use 'delete <task number>' to remove a task.\n" +
         "Use 'view' to see the tasks and task numbers.\n" +
         "Use 'clear' to empty the task list.");
