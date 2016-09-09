@@ -35,7 +35,7 @@ controller.hears(['add'], 'direct_message,direct_mention,mention', function(bot,
         if(message.match.input.indexOf(",") > -1) {
             tasks = message.match.input.substring(4).split(',');
             for(var i in tasks){
-              user.tasks.push(tasks[i]);
+              user.tasks.push(tasks[i].trim());
             }
             controller.storage.users.save(user,function(err, id) {
                 bot.reply(message, "Saved task.");
