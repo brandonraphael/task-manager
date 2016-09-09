@@ -117,7 +117,7 @@ controller.hears(['delete'], 'direct_message,direct_mention,mention', function(b
 
 controller.hears(['help', 'halp'], 'direct_message,direct_mention,mention', function(bot, message) {
     bot.reply(message,
-        "Use 'add <task>' to add a task, or 'add <task,task,...>' to add multiple tasks.\n" +
+        "Use 'add <task>' to add a task, or 'add <task>,<task>,<...>' to add multiple tasks.\n" +
         "Use 'delete <task number>' to remove a task.\n" +
         "Use 'view' to see the tasks and task numbers.\n" +
         "Use 'clear' to empty the task list.");
